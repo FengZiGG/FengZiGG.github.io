@@ -2,86 +2,93 @@
 
 NexT.boot = {};
 
-NexT.boot.registerEvents = function() {
-
+NexT.boot.registerEvents = function () {
   NexT.utils.registerScrollPercent();
   NexT.utils.registerCanIUseTag();
 
   // Mobile top menu bar.
-  document.querySelector('.site-nav-toggle .toggle').addEventListener('click', () => {
-    event.currentTarget.classList.toggle('toggle-close');
-    var siteNav = document.querySelector('.site-nav');
-    var animateAction = siteNav.classList.contains('site-nav-on') ? 'slideUp' : 'slideDown';
+  document
+    .querySelector(".site-nav-toggle .toggle")
+    .addEventListener("click", () => {
+      event.currentTarget.classList.toggle("toggle-close");
+      var siteNav = document.querySelector(".site-nav");
+      var animateAction = siteNav.classList.contains("site-nav-on")
+        ? "slideUp"
+        : "slideDown";
 
-    if (typeof Velocity === 'function') {
-      Velocity(siteNav, animateAction, {
-        duration: 200,
-        complete: function() {
-          siteNav.classList.toggle('site-nav-on');
-        }
-      });
-    } else {
-      siteNav.classList.toggle('site-nav-on');
-    }
-  });
+      if (typeof Velocity === "function") {
+        Velocity(siteNav, animateAction, {
+          duration: 200,
+          complete: function () {
+            siteNav.classList.toggle("site-nav-on");
+          },
+        });
+      } else {
+        siteNav.classList.toggle("site-nav-on");
+      }
+    });
 
   var TAB_ANIMATE_DURATION = 200;
-  document.querySelectorAll('.sidebar-nav li').forEach((element, index) => {
-    element.addEventListener('click', event => {
+  document.querySelectorAll(".sidebar-nav li").forEach((element, index) => {
+    element.addEventListener("click", (event) => {
       var item = event.currentTarget;
-      var activeTabClassName = 'sidebar-nav-active';
-      var activePanelClassName = 'sidebar-panel-active';
+      var activeTabClassName = "sidebar-nav-active";
+      var activePanelClassName = "sidebar-panel-active";
       if (item.classList.contains(activeTabClassName)) return;
 
-      var targets = document.querySelectorAll('.sidebar-panel');
+      var targets = document.querySelectorAll(".sidebar-panel");
       var target = targets[index];
       var currentTarget = targets[1 - index];
       window.anime({
-        targets : currentTarget,
+        targets: currentTarget,
         duration: TAB_ANIMATE_DURATION,
-        easing  : 'linear',
-        opacity : 0,
+        easing: "linear",
+        opacity: 0,
         complete: () => {
-          // Prevent adding TOC to Overview if Overview was selected when close & open sidebar.
+          // Prevent adding TOC to Overview if Overview was selected when close
+          // & open sidebar.
           currentTarget.classList.remove(activePanelClassName);
           target.style.opacity = 0;
           target.classList.add(activePanelClassName);
           window.anime({
-            targets : target,
+            targets: target,
             duration: TAB_ANIMATE_DURATION,
-            easing  : 'linear',
-            opacity : 1
+            easing: "linear",
+            opacity: 1,
           });
-        }
+        },
       });
 
-      [...item.parentNode.children].forEach(element => {
+      [...item.parentNode.children].forEach((element) => {
         element.classList.remove(activeTabClassName);
       });
       item.classList.add(activeTabClassName);
     });
   });
 
-  window.addEventListener('resize', NexT.utils.initSidebarDimension);
+  window.addEventListener("resize", NexT.utils.initSidebarDimension);
 
-  window.addEventListener('hashchange', () => {
+  window.addEventListener("hashchange", () => {
     var tHash = location.hash;
-    if (tHash !== '' && !tHash.match(/%\S{2}/)) {
-      var target = document.querySelector(`.tabs ul.nav-tabs li a[href="${tHash}"]`);
+    if (tHash !== "" && !tHash.match(/%\S{2}/)) {
+      var target = document.querySelector(
+        `.tabs ul.nav-tabs li a[href="${tHash}"]`
+      );
       target && target.click();
     }
   });
 };
 
-NexT.boot.refresh = function() {
-
+NexT.boot.refresh = function () {
   /**
    * Register JS handlers by condition option.
-   * Need to add config option in Front-End at 'layout/_partials/head.swig' file.
+   * Need to add config option in Front-End at 'layout/_partials/head.swig'
+   * file.
    */
   CONFIG.fancybox && NexT.utils.wrapImageWithFancyBox();
-  CONFIG.mediumzoom && window.mediumZoom('.post-body :not(a) > img, .post-body > img');
-  CONFIG.lazyload && window.lozad('.post-body img').observe();
+  CONFIG.mediumzoom &&
+    window.mediumZoom(".post-body :not(a) > img, .post-body > img");
+  CONFIG.lazyload && window.lozad(".post-body img").observe();
   CONFIG.pangu && window.pangu.spacingPage();
 
   CONFIG.exturl && NexT.utils.registerExtURL();
@@ -94,7 +101,7 @@ NexT.boot.refresh = function() {
   NexT.utils.registerVideoIframe();
 };
 
-NexT.boot.motion = function() {
+NexT.boot.motion = function () {
   // Define Motion Sequence & Bootstrap Motion.
   if (CONFIG.motion.enable) {
     NexT.motion.integrator
@@ -107,7 +114,7 @@ NexT.boot.motion = function() {
   NexT.utils.updateSidebarPosition();
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   NexT.boot.registerEvents();
   NexT.boot.refresh();
   NexT.boot.motion();
