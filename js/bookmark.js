@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isNaN(top) && location.hash === '') {
       // Auto scroll to the position
       window.anime({
-        targets  : document.scrollingElement,
+        targets : document.scrollingElement,
         duration : 200,
-        easing   : 'linear',
-        scrollTop: top
+        easing : 'linear',
+        scrollTop : top
       });
     }
   };
@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create a link element
     var link = document.querySelector('.book-mark-link');
     // Scroll event
-    window.addEventListener('scroll', () => link.classList.toggle('book-mark-link-fixed', window.scrollY === 0));
+    window.addEventListener('scroll',
+                            () => link.classList.toggle('book-mark-link-fixed',
+                                                        window.scrollY === 0));
     // Register beforeunload event when the trigger is auto
     if (trigger === 'auto') {
       // Register beforeunload event
@@ -38,14 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
       doSaveScroll();
       window.anime({
         targets : link,
-        duration: 200,
-        easing  : 'linear',
-        top     : -30,
-        complete: () => {
-          setTimeout(() => {
-            link.style.top = '';
-          }, 400);
-        }
+        duration : 200,
+        easing : 'linear',
+        top : -30,
+        complete : () => { setTimeout(() => { link.style.top = ''; }, 400); }
       });
     });
     scrollToMark();
