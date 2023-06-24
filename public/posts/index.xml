@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>WingsXFire</title>
-    <link>https:///wangxinfeng.com/</link>
-    <description>Recent content on WingsXFire</description>
+    <title>Posts on WingsXFire</title>
+    <link>https:///wangxinfeng.com/posts/</link>
+    <description>Recent content in Posts on WingsXFire</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 24 Jun 2023 20:30:21 +0800</lastBuildDate><atom:link href="https:///wangxinfeng.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 24 Jun 2023 20:30:21 +0800</lastBuildDate><atom:link href="https:///wangxinfeng.com/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Hugo_github_blog</title>
       <link>https:///wangxinfeng.com/posts/hugo_github_blog/</link>

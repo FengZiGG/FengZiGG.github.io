@@ -1,7 +1,7 @@
 ---
 title: "HelloWorld"
 date: 2023-06-24T13:24:11+08:00
-draft: true
+draft: false
 ---
 
 此前一直隔段时间就尝试一次搭建博客，最终都“浅尝辄止”，没写多少内容就断了。
