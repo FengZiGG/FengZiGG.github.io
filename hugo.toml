@@ -1,0 +1,4 @@
+baseURL = 'https:///wangxinfeng.com/'
+languageCode = 'en-us'
+title = 'WXF's Blog'
+theme = 'ananke'
