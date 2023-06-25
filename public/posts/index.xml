@@ -8,7 +8,7 @@
     <language>en-us</language>
     <lastBuildDate>Sat, 24 Jun 2023 20:30:21 +0800</lastBuildDate><atom:link href="https:///wangxinfeng.com/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Hugo_github_blog</title>
+      <title>Hugo&#43;Github 博客搭建</title>
       <link>https:///wangxinfeng.com/posts/hugo_github_blog/</link>
       <pubDate>Sat, 24 Jun 2023 20:30:21 +0800</pubDate>
       
@@ -17,9 +17,9 @@
 快速搭建，简单使用，后续再进行打磨，添加诸如标签，评论区，$\LaTeX$公式和导航条等等，当然，看的人多的话，也会考虑迁移到WordPress。
 1. 前期准备工作 在自己的 Github 创建一个名为 username.github.io的公开仓库，其中username是自己账号的名称。在Settings-&amp;gt;Pages-&amp;gt;Custom domain中填写自己的域名，会在仓库中生成一个 CNAME 文件，完成后在自己电脑上clone下来。
 如果是需要使用自己的域名的，还需要在域名服务商那边给域名添加解析：
-@ A 185.199.108.153 @ A 185.199.109.153 @ A 185.199.110.153 @ A 185.199.111.153 www CNAME username.github.io 相关文档：[管理 GitHub Pages 站点的自定义域](https://docs.github.com/zh/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site “管理 GitHub Pages 站点的自定义域”)
+@ A 185.199.108.153 @ A 185.199.109.153 @ A 185.199.110.153 @ A 185.199.111.153 www CNAME username.github.io 相关文档：管理 GitHub Pages 站点的自定义域
 2. Hugo 博客搭建 可以通过 Hugo 官网，根据自己的系统选择不同的安装方式，我的系统是 macOS：
-# 1. macOS homebrew. brew install hugo # 2. use hugo command to create your blog folder, # force option used when the folder name is already existing.</description>
+# 1. macOS homebrew. brew install hugo # 2. use hugo command to create your blog folder, # force option used when the folder name is already existing. hugo new site blogfolder --force cd blogfolder # add theme git submodule add https://github.</description>
     </item>
     
     <item>

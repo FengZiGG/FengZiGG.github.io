@@ -1,5 +1,5 @@
 ---
-title: "Hugo_github_blog"
+title: "Hugo+Github 博客搭建"
 date: 2023-06-24T20:30:21+08:00
 draft: false
 ---
@@ -24,7 +24,7 @@ draft: false
 www CNAME username.github.io
 ```
 
-相关文档：[管理 GitHub Pages 站点的自定义域](https://docs.github.com/zh/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site “管理 GitHub Pages 站点的自定义域”)
+相关文档：[管理 GitHub Pages 站点的自定义域](https://docs.github.com/zh/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
 
 ## 2. Hugo 博客搭建
 
@@ -166,9 +166,9 @@ jobs:
 
 ## 5. 参考链接：
 
-- [Hugo+Github Pages+Github Action博客方案之三——配置Github Action实现自动发布](https://zhuanlan.zhihu.com/p/568764664 “Hugo+Github Pages+Github Action博客方案之三——配置Github Action实现自动发布”)
-- [利用GitHub Action实现Hugo博客在GitHub Pages自动部署](https://lucumt.info/post/hugo/using-github-action-to-auto-build-deploy “利用GitHub Action实现Hugo博客在GitHub Pages自动部署”)
-- [Host on GitHub](https://gohugo.io/hosting-and-deployment/hosting-on-github “Host on GitHub”)
-- [Github Pages + Hugo 搭建个人博客](https://zz2summer.github.io/github-pages-hugo-%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/#%E4%BA%94%E6%96%B0%E5%BB%BA%E6%96%87%E7%AB%A0 “Github Pages + Hugo 搭建个人博客”)
+- [Hugo+Github Pages+Github Action博客方案之三——配置Github Action实现自动发布](https://zhuanlan.zhihu.com/p/568764664)
+- [利用GitHub Action实现Hugo博客在GitHub Pages自动部署](https://lucumt.info/post/hugo/using-github-action-to-auto-build-deploy )
+- [Host on GitHub](https://gohugo.io/hosting-and-deployment/hosting-on-github )
+- [Github Pages + Hugo 搭建个人博客](https://zz2summer.github.io/github-pages-hugo-%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/#%E4%BA%94%E6%96%B0%E5%BB%BA%E6%96%87%E7%AB%A0)
 
  
