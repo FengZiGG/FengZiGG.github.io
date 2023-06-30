@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>WingsXFire</title>
-    <link>https:///wangxinfeng.com/</link>
+    <link>/</link>
     <description>Recent content on WingsXFire</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 24 Jun 2023 20:30:21 +0800</lastBuildDate><atom:link href="https:///wangxinfeng.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 24 Jun 2023 20:30:21 +0800</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Hugo&#43;Github 博客搭建</title>
-      <link>https:///wangxinfeng.com/posts/hugo_github_blog/</link>
+      <link>/posts/hugo_github_blog/</link>
       <pubDate>Sat, 24 Jun 2023 20:30:21 +0800</pubDate>
       
-      <guid>https:///wangxinfeng.com/posts/hugo_github_blog/</guid>
+      <guid>/posts/hugo_github_blog/</guid>
       <description>0. 这篇文章主要目的 记录使用Hugo+Github以及自己注册的域名，搭建一个简易博客，会尽可能给出详细步骤。
 快速搭建，简单使用，后续再进行打磨，添加诸如标签，评论区，$\LaTeX$公式和导航条等等，当然，看的人多的话，也会考虑迁移到WordPress。
 1. 前期准备工作 在自己的 Github 创建一个名为 username.github.io的公开仓库，其中username是自己账号的名称。在Settings-&amp;gt;Pages-&amp;gt;Custom domain中填写自己的域名，会在仓库中生成一个 CNAME 文件，完成后在自己电脑上clone下来。
@@ -24,10 +24,10 @@
     
     <item>
       <title>HelloWorld</title>
-      <link>https:///wangxinfeng.com/posts/helloworld/</link>
+      <link>/posts/helloworld/</link>
       <pubDate>Sat, 24 Jun 2023 13:24:11 +0800</pubDate>
       
-      <guid>https:///wangxinfeng.com/posts/helloworld/</guid>
+      <guid>/posts/helloworld/</guid>
       <description>此前一直隔段时间就尝试一次搭建博客，最终都“浅尝辄止”，没写多少内容就断了。
 现在，写博客是记录自己“乱七八糟”的生活的方方面面，提升写作能力，通过输出，更好的强化自己。前二十多年算是虚度了，不过有不少是我自己的原因，或许这就是命吧，但现在，我想试试“逆天改命”。
 以“HelloWorld”为第一篇，寓意新的开始，新的篇章。

@@ -1,6 +1,7 @@
 ---
 title: "Hugo+Github 博客搭建"
 date: 2023-06-24T20:30:21+08:00
+math : true
 draft: false
 ---
 
