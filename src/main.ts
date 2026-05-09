@@ -3,8 +3,8 @@ import './style.css'
 type Player = { id: string; name: string; female: boolean; level: string; unresolved: boolean }
 type Brand = { id: string; name: string; tubePrice: number }
 type ShuttleUsage = { id: string; brandId: string; count: number }
-type Court = { id: string; label: string; courtFee: number; usage: ShuttleUsage[] }
-type ExportCfg = { x: number; y: number; scale: number; titleSize: number; cellSize: number }
+type Court = { id: string; label: string; usage: ShuttleUsage[] }
+type ExportCfg = { x: number; y: number; scale: number; cellSize: number }
 type State = {
   raw: string
   date: string
@@ -19,9 +19,9 @@ type State = {
   exportCfg: ExportCfg
 }
 
-const KEY = 'fengzi_badminton_state_v5'
+const KEY = 'fengzi_badminton_state_v6'
 const makeBrand = (): Brand => ({ id: `b${Date.now()}${Math.random()}`, name: '黄超', tubePrice: 120 })
-const makeCourt = (n: number): Court => ({ id: `c${Date.now()}${Math.random()}`, label: `${n}`, courtFee: 70, usage: [] })
+const makeCourt = (n: number): Court => ({ id: `c${Date.now()}${Math.random()}`, label: `${n}`, usage: [] })
 const initial: State = {
   raw: '',
   date: '',
@@ -33,23 +33,24 @@ const initial: State = {
   courts: [makeCourt(1), makeCourt(2)],
   assignment: {},
   bgDataUrl: '',
-  exportCfg: { x: 0, y: 0, scale: 1, titleSize: 56, cellSize: 36 },
+  exportCfg: { x: 0, y: 0, scale: 1, cellSize: 34 },
 }
-
 let s: State = load()
 let gateClicks: number[] = []
-const app = document.querySelector<HTMLDivElement>('#app')!
 
+restoreFromShare()
+
+const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
 <main class="page">
   <header class="topbar card">
     <button id="gate" class="icon-btn" title="连续点三下进入博客">🏸</button>
     <h1>风子的羽毛球场地分配工具</h1>
     <div class="row">
-      <button id="clearCache" class="btn subtle">清空缓存</button>
+      <a class="btn subtle" href="/badmintoncost/">费用页</a>
+      <button id="share" class="btn subtle">分享当前排表</button>
       <button id="exportPreview" class="btn primary">导出前预览</button>
       <button id="exportSchedule" class="btn primary">导出场地排表</button>
-      <button id="exportFee" class="btn subtle">导出价格表</button>
     </div>
   </header>
 
@@ -63,6 +64,7 @@ app.innerHTML = `
       <button id="removeGroup" class="btn subtle">-组</button>
       <button id="addCourt" class="btn subtle">+场地</button>
       <button id="removeCourt" class="btn subtle">-场地</button>
+      <button id="clearCache" class="btn subtle">清空缓存</button>
     </div>
   </section>
 
@@ -74,18 +76,18 @@ app.innerHTML = `
   </section>
 
   <section class="card">
-    <div class="subhead">羽毛球品牌与价格（每桶默认12颗）</div>
+    <div class="subhead">羽毛球品牌（导出第二行只显示品牌名）</div>
     <div id="brandList"></div>
     <button id="addBrand" class="btn subtle">+品牌</button>
   </section>
 
   <section class="card">
-    <div class="subhead">选手池（可拖拽，支持拖回池）</div>
+    <div class="subhead">选手池（可拖回池，手机一行2个）</div>
     <div id="pool" class="pool"></div>
   </section>
 
   <section class="card">
-    <div class="subhead">场地分配（拖拽自动交换位置）</div>
+    <div class="subhead">场地分配（拖拽自动交换）</div>
     <div id="table"></div>
   </section>
 </main>
@@ -98,11 +100,10 @@ app.innerHTML = `
       <label>X偏移<input id="cfgX" type="range" min="-300" max="300" step="1"></label>
       <label>Y偏移<input id="cfgY" type="range" min="-300" max="300" step="1"></label>
       <label>缩放<input id="cfgScale" type="range" min="0.6" max="1.3" step="0.01"></label>
-      <label>标题字号<input id="cfgTitle" type="range" min="40" max="72" step="1"></label>
       <label>内容字号<input id="cfgCell" type="range" min="24" max="44" step="1"></label>
       <div class="row">
         <button id="previewClose" class="btn subtle">关闭</button>
-        <button id="previewExport" class="btn primary">确认导出排表</button>
+        <button id="previewExport" class="btn primary">确认导出</button>
       </div>
     </div>
   </div>
@@ -124,25 +125,24 @@ byId('gate').addEventListener('click', () => {
   gateClicks = [...gateClicks.filter((x) => now - x < 1500), now]
   if (gateClicks.length >= 3) location.href = '/blog/'
 })
-byId('clearCache').addEventListener('click', () => { localStorage.removeItem(KEY); s = structuredClone(initial); render() })
 byId('parse').addEventListener('click', () => { parseRelay(rawEl.value); render() })
 byId('addGroup').addEventListener('click', () => { s.groups += 1; save(); renderTable() })
 byId('removeGroup').addEventListener('click', () => { s.groups = Math.max(1, s.groups - 1); trimAssignment(); save(); renderTable() })
 byId('addCourt').addEventListener('click', () => { s.courts.push(makeCourt(s.courts.length + 1)); save(); renderTable() })
 byId('removeCourt').addEventListener('click', () => { s.courts = s.courts.slice(0, Math.max(1, s.courts.length - 1)); trimAssignment(); save(); renderTable() })
 byId('addBrand').addEventListener('click', () => { s.brands.push(makeBrand()); save(); renderBrands(); renderTable() })
+byId('clearCache').addEventListener('click', () => { localStorage.removeItem(KEY); s = structuredClone(initial); render() })
+byId('share').addEventListener('click', () => shareCurrent())
+byId('exportPreview').addEventListener('click', () => { previewDialog.showModal(); bindPreviewControls(); drawPreview() })
+byId('previewClose').addEventListener('click', () => previewDialog.close())
+byId('previewExport').addEventListener('click', () => exportScheduleImage())
+byId('exportSchedule').addEventListener('click', () => exportScheduleImage())
 byId<HTMLInputElement>('bgUpload').addEventListener('change', async (e) => {
   const f = (e.target as HTMLInputElement).files?.[0]
   if (!f) return
   s.bgDataUrl = await fileToDataUrl(f)
   save()
 })
-byId('exportPreview').addEventListener('click', () => { previewDialog.showModal(); bindPreviewControls(); drawPreview() })
-byId('previewClose').addEventListener('click', () => { previewDialog.close() })
-byId('previewExport').addEventListener('click', () => exportScheduleImage())
-byId('exportSchedule').addEventListener('click', () => exportScheduleImage())
-byId('exportFee').addEventListener('click', () => exportFeeImage())
-
 dateEl.addEventListener('input', () => { s.date = dateEl.value; save() })
 timeEl.addEventListener('input', () => { s.time = timeEl.value; save() })
 placeEl.addEventListener('input', () => { s.place = placeEl.value; save() })
@@ -195,7 +195,7 @@ function renderBrands() {
     el.addEventListener('input', () => { const b = s.brands.find((x) => x.id === el.dataset.brandName); if (!b) return; b.name = el.value; save(); renderTable() })
   })
   brandListEl.querySelectorAll<HTMLInputElement>('input[data-brand-price]').forEach((el) => {
-    el.addEventListener('input', () => { const b = s.brands.find((x) => x.id === el.dataset.brandPrice); if (!b) return; b.tubePrice = Number(el.value || 0); save(); renderTable() })
+    el.addEventListener('input', () => { const b = s.brands.find((x) => x.id === el.dataset.brandPrice); if (!b) return; b.tubePrice = Number(el.value || 0); save() })
   })
   brandListEl.querySelectorAll<HTMLButtonElement>('button[data-brand-del]').forEach((el) => {
     el.addEventListener('click', () => { s.brands = s.brands.filter((x) => x.id !== el.dataset.brandDel); save(); renderBrands(); renderTable() })
@@ -203,108 +203,85 @@ function renderBrands() {
 }
 
 function renderPool() {
-  const assignedIds = new Set(Object.values(s.assignment).filter(Boolean) as string[])
-  const poolPlayers = s.players.filter((p) => !assignedIds.has(p.id))
-  poolEl.innerHTML = poolPlayers.map((p) => playerCardHtml(p)).join('')
+  const assigned = new Set(Object.values(s.assignment).filter(Boolean) as string[])
+  const inPool = s.players.filter((p) => !assigned.has(p.id))
+  poolEl.innerHTML = inPool.map((p) => `
+    <article class="player-card ${p.unresolved ? 'bad' : ''}" draggable="true" data-player="${p.id}">
+      <input data-player-name="${p.id}" value="${esc(p.name)}">
+      <input data-player-level="${p.id}" value="${esc(p.level)}" placeholder="中羽等级">
+      <button data-player-flower="${p.id}" class="flower">${p.female ? '🌷' : ''}</button>
+    </article>
+  `).join('')
+  bindPlayerEvents(poolEl)
   poolEl.classList.add('dropzone')
-  poolEl.addEventListener('dragover', (e) => e.preventDefault())
-  poolEl.addEventListener('drop', (e) => {
+  poolEl.ondragover = (e) => e.preventDefault()
+  poolEl.ondrop = (e) => {
     e.preventDefault()
     const pid = e.dataTransfer?.getData('text/plain')
     if (!pid) return
     unassignPlayer(pid)
     save()
     render()
-  })
-  bindPlayerCardEvents(poolEl)
+  }
 }
 
-function playerCardHtml(p: Player) {
-  return `<article class="player-card ${p.unresolved ? 'bad' : ''}" draggable="true" data-player="${p.id}">
-    <input data-player-name="${p.id}" value="${esc(p.name)}">
-    <input data-player-level="${p.id}" value="${esc(p.level)}" placeholder="中羽等级">
-    <button data-player-flower="${p.id}" class="flower">${p.female ? '🌷' : ''}</button>
-  </article>`
-}
-
-function bindPlayerCardEvents(root: HTMLElement) {
+function bindPlayerEvents(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-player]').forEach((el) => {
-    el.addEventListener('dragstart', (e) => e.dataTransfer?.setData('text/plain', String(el.dataset.player)))
+    el.ondragstart = (e) => e.dataTransfer?.setData('text/plain', String(el.dataset.player))
   })
   root.querySelectorAll<HTMLInputElement>('input[data-player-name]').forEach((el) => {
-    el.addEventListener('input', () => {
-      const p = s.players.find((x) => x.id === el.dataset.playerName); if (!p) return
-      p.name = el.value || '未解析'; p.unresolved = p.name === '未解析'; save()
-    })
+    el.oninput = () => { const p = s.players.find((x) => x.id === el.dataset.playerName); if (!p) return; p.name = el.value || '未解析'; p.unresolved = p.name === '未解析'; save() }
   })
   root.querySelectorAll<HTMLInputElement>('input[data-player-level]').forEach((el) => {
-    el.addEventListener('input', () => {
-      const p = s.players.find((x) => x.id === el.dataset.playerLevel); if (!p) return
-      p.level = el.value; save()
-    })
+    el.oninput = () => { const p = s.players.find((x) => x.id === el.dataset.playerLevel); if (!p) return; p.level = el.value; save() }
   })
   root.querySelectorAll<HTMLButtonElement>('button[data-player-flower]').forEach((el) => {
-    el.addEventListener('click', (ev) => {
-      ev.stopPropagation()
-      const p = s.players.find((x) => x.id === el.dataset.playerFlower); if (!p) return
-      p.female = !p.female; save(); render()
-    })
+    el.onclick = (ev) => { ev.stopPropagation(); const p = s.players.find((x) => x.id === el.dataset.playerFlower); if (!p) return; p.female = !p.female; save(); render() }
   })
 }
 
 function renderTable() {
-  const header = s.courts.map((c) => `<th>
+  const head = s.courts.map((c) => `<th>
     <input data-court-label="${c.id}" value="${esc(c.label)}号场">
-    <input data-court-fee="${c.id}" type="number" step="0.01" value="${c.courtFee}" placeholder="场地费">
     <div class="usage-list">${renderUsage(c)}</div>
     <button data-usage-add="${c.id}" class="btn subtle mini">+用球</button>
   </th>`).join('')
-  const rows = Array.from({ length: s.groups }).map((_, gi) => {
-    const tds = s.courts.map((c) => {
-      const a = slotHtml(c.id, gi, 0)
-      const b = slotHtml(c.id, gi, 1)
-      return `<td><div class="slot-col">${a}${b}</div></td>`
-    }).join('')
-    return `<tr><th>第${gi + 1}组</th>${tds}</tr>`
+  const body = Array.from({ length: s.groups }).map((_, gi) => {
+    const cols = s.courts.map((c) => `<td><div class="slot-col">${slotHtml(c.id, gi, 0)}${slotHtml(c.id, gi, 1)}</div></td>`).join('')
+    return `<tr><th>第${gi + 1}组</th>${cols}</tr>`
   }).join('')
-  tableEl.innerHTML = `<table class="assign-table"><tr><th>场地</th>${header}</tr>${rows}</table>`
+  tableEl.innerHTML = `<table class="assign-table"><tr><th>场地</th>${head}</tr>${body}</table>`
 
   tableEl.querySelectorAll<HTMLInputElement>('input[data-court-label]').forEach((el) => {
-    el.addEventListener('input', () => { const c = s.courts.find((x) => x.id === el.dataset.courtLabel); if (!c) return; c.label = el.value.replace('号场', ''); save() })
-  })
-  tableEl.querySelectorAll<HTMLInputElement>('input[data-court-fee]').forEach((el) => {
-    el.addEventListener('input', () => { const c = s.courts.find((x) => x.id === el.dataset.courtFee); if (!c) return; c.courtFee = Number(el.value || 0); save() })
+    el.oninput = () => { const c = s.courts.find((x) => x.id === el.dataset.courtLabel); if (!c) return; c.label = el.value.replace('号场', ''); save() }
   })
   tableEl.querySelectorAll<HTMLButtonElement>('button[data-usage-add]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const c = s.courts.find((x) => x.id === el.dataset.usageAdd); if (!c || s.brands.length === 0) return
-      c.usage.push({ id: `u${Date.now()}${Math.random()}`, brandId: s.brands[0].id, count: 1 }); save(); renderTable()
-    })
+    el.onclick = () => { const c = s.courts.find((x) => x.id === el.dataset.usageAdd); if (!c || s.brands.length === 0) return; c.usage.push({ id: `u${Date.now()}${Math.random()}`, brandId: s.brands[0].id, count: 1 }); save(); renderTable() }
   })
   tableEl.querySelectorAll<HTMLSelectElement>('select[data-usage-brand]').forEach((el) => {
-    el.addEventListener('change', () => { const [cid, uid] = String(el.dataset.usageBrand).split('|'); const c = s.courts.find((x) => x.id === cid); const u = c?.usage.find((x) => x.id === uid); if (!u) return; u.brandId = el.value; save() })
+    el.onchange = () => { const [cid, uid] = String(el.dataset.usageBrand).split('|'); const c = s.courts.find((x) => x.id === cid); const u = c?.usage.find((x) => x.id === uid); if (!u) return; u.brandId = el.value; save() }
   })
   tableEl.querySelectorAll<HTMLInputElement>('input[data-usage-count]').forEach((el) => {
-    el.addEventListener('input', () => { const [cid, uid] = String(el.dataset.usageCount).split('|'); const c = s.courts.find((x) => x.id === cid); const u = c?.usage.find((x) => x.id === uid); if (!u) return; u.count = Number(el.value || 0); save() })
+    el.oninput = () => { const [cid, uid] = String(el.dataset.usageCount).split('|'); const c = s.courts.find((x) => x.id === cid); const u = c?.usage.find((x) => x.id === uid); if (!u) return; u.count = Number(el.value || 0); save() }
   })
   tableEl.querySelectorAll<HTMLButtonElement>('button[data-usage-del]').forEach((el) => {
-    el.addEventListener('click', () => { const [cid, uid] = String(el.dataset.usageDel).split('|'); const c = s.courts.find((x) => x.id === cid); if (!c) return; c.usage = c.usage.filter((x) => x.id !== uid); save(); renderTable() })
+    el.onclick = () => { const [cid, uid] = String(el.dataset.usageDel).split('|'); const c = s.courts.find((x) => x.id === cid); if (!c) return; c.usage = c.usage.filter((x) => x.id !== uid); save(); renderTable() }
   })
 
   tableEl.querySelectorAll<HTMLElement>('.slot').forEach((el) => {
-    el.addEventListener('dragover', (e) => e.preventDefault())
-    el.addEventListener('drop', (e) => {
+    el.ondragover = (e) => e.preventDefault()
+    el.ondrop = (e) => {
       e.preventDefault()
       const pid = e.dataTransfer?.getData('text/plain')
       if (!pid) return
       dropToSlot(pid, String(el.dataset.slot))
-    })
+    }
   })
   tableEl.querySelectorAll<HTMLElement>('[data-slot-player]').forEach((el) => {
-    el.addEventListener('dragstart', (e) => e.dataTransfer?.setData('text/plain', String(el.dataset.slotPlayer)))
+    el.ondragstart = (e) => e.dataTransfer?.setData('text/plain', String(el.dataset.slotPlayer))
   })
   tableEl.querySelectorAll<HTMLButtonElement>('button[data-slot-clear]').forEach((el) => {
-    el.addEventListener('click', () => { unassignPlayer(String(el.dataset.slotClear)); save(); render() })
+    el.onclick = () => { unassignPlayer(String(el.dataset.slotClear)); save(); render() }
   })
 }
 
@@ -340,14 +317,9 @@ function dropToSlot(playerId: string, targetKey: string) {
   save()
   render()
 }
-
-function findPlayerSlot(playerId: string) {
-  return Object.keys(s.assignment).find((k) => s.assignment[k] === playerId) || null
-}
-function unassignPlayer(playerId: string) {
-  Object.keys(s.assignment).forEach((k) => { if (s.assignment[k] === playerId) s.assignment[k] = null })
-}
-function slotKey(courtId: string, groupIndex: number, pairIndex: number) { return `${courtId}|${groupIndex}|${pairIndex}` }
+function findPlayerSlot(playerId: string) { return Object.keys(s.assignment).find((k) => s.assignment[k] === playerId) || null }
+function unassignPlayer(playerId: string) { Object.keys(s.assignment).forEach((k) => { if (s.assignment[k] === playerId) s.assignment[k] = null }) }
+function slotKey(courtId: string, gi: number, pi: number) { return `${courtId}|${gi}|${pi}` }
 function trimAssignment() {
   const valid = new Set<string>()
   s.courts.forEach((c) => { for (let g = 0; g < s.groups; g += 1) for (let p = 0; p < 2; p += 1) valid.add(slotKey(c.id, g, p)) })
@@ -355,15 +327,16 @@ function trimAssignment() {
 }
 
 function bindPreviewControls() {
-  const set = (id: string, val: number) => { byId<HTMLInputElement>(id).value = String(val) }
-  set('cfgX', s.exportCfg.x); set('cfgY', s.exportCfg.y); set('cfgScale', s.exportCfg.scale); set('cfgTitle', s.exportCfg.titleSize); set('cfgCell', s.exportCfg.cellSize)
-  ;(['cfgX', 'cfgY', 'cfgScale', 'cfgTitle', 'cfgCell'] as const).forEach((id) => {
+  byId<HTMLInputElement>('cfgX').value = String(s.exportCfg.x)
+  byId<HTMLInputElement>('cfgY').value = String(s.exportCfg.y)
+  byId<HTMLInputElement>('cfgScale').value = String(s.exportCfg.scale)
+  byId<HTMLInputElement>('cfgCell').value = String(s.exportCfg.cellSize)
+  ;(['cfgX', 'cfgY', 'cfgScale', 'cfgCell'] as const).forEach((id) => {
     byId<HTMLInputElement>(id).oninput = () => {
       s.exportCfg = {
         x: Number(byId<HTMLInputElement>('cfgX').value),
         y: Number(byId<HTMLInputElement>('cfgY').value),
         scale: Number(byId<HTMLInputElement>('cfgScale').value),
-        titleSize: Number(byId<HTMLInputElement>('cfgTitle').value),
         cellSize: Number(byId<HTMLInputElement>('cfgCell').value),
       }
       save()
@@ -371,138 +344,105 @@ function bindPreviewControls() {
     }
   })
 }
-
-async function drawPreview() {
-  const canvas = byId<HTMLCanvasElement>('previewCanvas')
-  const ctx = canvas.getContext('2d')!
-  await drawSchedule(ctx, canvas.width, canvas.height)
-}
-
-async function exportScheduleImage() {
-  const c = document.createElement('canvas')
-  c.width = 1800
-  c.height = 1200
-  await drawSchedule(c.getContext('2d')!, c.width, c.height)
-  const a = document.createElement('a')
-  a.href = c.toDataURL('image/png')
-  a.download = `schedule-${Date.now()}.png`
-  a.click()
-}
+async function drawPreview() { const c = byId<HTMLCanvasElement>('previewCanvas'); await drawSchedule(c.getContext('2d')!, c.width, c.height) }
+async function exportScheduleImage() { const c = document.createElement('canvas'); c.width = 1800; c.height = 1200; await drawSchedule(c.getContext('2d')!, c.width, c.height); downloadCanvas(c, `schedule-${Date.now()}.png`) }
 
 async function drawSchedule(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  if (s.bgDataUrl) {
-    const bg = await loadImage(s.bgDataUrl)
-    ctx.drawImage(bg, 0, 0, w, h)
-  } else { ctx.fillStyle = '#f4efe6'; ctx.fillRect(0, 0, w, h) }
+  if (s.bgDataUrl) { const bg = await loadImage(s.bgDataUrl); ctx.drawImage(bg, 0, 0, w, h) }
+  else { ctx.fillStyle = '#f4efe6'; ctx.fillRect(0, 0, w, h) }
 
-  const tableW = (Math.min(1600, 240 + s.courts.length * 360)) * s.exportCfg.scale
-  const tableH = (260 + s.groups * 110) * s.exportCfg.scale
-  const x0 = (w - tableW) / 2 + s.exportCfg.x
-  const y0 = (h - tableH) / 2 + s.exportCfg.y
-  const firstCol = 140 * s.exportCfg.scale
+  const c = s.exportCfg
+  const tableW = (Math.min(1600, 240 + s.courts.length * 360)) * c.scale
+  const tableH = (310 + s.groups * 110 + 220) * c.scale
+  const x0 = (w - tableW) / 2 + c.x
+  const y0 = (h - tableH) / 2 + c.y
+  const firstCol = 150 * c.scale
   const colW = (tableW - firstCol) / Math.max(1, s.courts.length)
-  const row0 = 80 * s.exportCfg.scale
-  const row1 = 80 * s.exportCfg.scale
-  const rowG = 110 * s.exportCfg.scale
+  const r1 = 78 * c.scale
+  const r2 = 78 * c.scale
+  const rg = 110 * c.scale
+  const rLast = 220 * c.scale
 
   ctx.fillStyle = '#fff'
   ctx.fillRect(x0, y0, tableW, tableH)
   ctx.strokeStyle = '#222'
   ctx.lineWidth = 2
   ctx.strokeRect(x0, y0, tableW, tableH)
-  const yLines = [y0 + row0, y0 + row0 + row1, ...Array.from({ length: s.groups }, (_, i) => y0 + row0 + row1 + (i + 1) * rowG)]
+
+  const yLines = [y0 + r1, y0 + r1 + r2, ...Array.from({ length: s.groups }, (_, i) => y0 + r1 + r2 + (i + 1) * rg), y0 + r1 + r2 + s.groups * rg + rLast]
   yLines.forEach((yy) => { ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + tableW, yy); ctx.stroke() })
+
   ctx.beginPath(); ctx.moveTo(x0 + firstCol, y0); ctx.lineTo(x0 + firstCol, y0 + tableH); ctx.stroke()
-  for (let i = 1; i < s.courts.length; i += 1) { const xx = x0 + firstCol + i * colW; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + tableH); ctx.stroke() }
+  for (let i = 1; i < s.courts.length; i += 1) { const xx = x0 + firstCol + i * colW; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + r1 + r2 + s.groups * rg); ctx.stroke() }
 
   ctx.fillStyle = '#111'
-  ctx.font = `700 ${s.exportCfg.titleSize}px "Noto Sans SC"`
-  ctx.fillText('场地分配表', x0 + tableW / 2 - 130 * s.exportCfg.scale, y0 - 26)
-  ctx.font = `600 ${Math.round(s.exportCfg.cellSize * 0.95)}px "Noto Sans SC"`
-  ctx.fillText('日期', x0 + 24, y0 + 50 * s.exportCfg.scale)
-  ctx.fillText(`${s.date}`, x0 + firstCol + 10, y0 + 50 * s.exportCfg.scale)
-  ctx.fillText(`时间：${s.time}`, x0 + firstCol + colW * Math.max(0, s.courts.length - 1) - 40, y0 + 50 * s.exportCfg.scale)
-  ctx.fillText(`场地：${s.place}`, x0 + firstCol + colW * 0.8, y0 + 130 * s.exportCfg.scale)
-  ctx.fillText('场地', x0 + 24, y0 + 130 * s.exportCfg.scale)
-  s.courts.forEach((c, i) => fitText(ctx, `${c.label}号（${usageText(c)}）`, x0 + firstCol + i * colW + 12, y0 + 130 * s.exportCfg.scale, colW - 18, s.exportCfg.cellSize, 20))
+  ctx.font = `700 ${Math.round(c.cellSize * 1.1)}px "Noto Sans SC"`
+  ctx.fillText('日期', x0 + 24, y0 + 48 * c.scale)
+  ctx.fillText(`时间：${s.time}`, x0 + firstCol + colW * Math.max(0, s.courts.length - 1) - 20, y0 + 48 * c.scale)
+  ctx.fillText(`地点：${s.place}`, x0 + firstCol + colW * 0.8, y0 + 48 * c.scale)
+  fitText(ctx, s.date, x0 + firstCol + 14, y0 + 48 * c.scale, colW - 18, c.cellSize, 16)
 
-  let gy = y0 + row0 + row1
+  ctx.fillText('场地', x0 + 24, y0 + r1 + 48 * c.scale)
+  s.courts.forEach((court, i) => fitText(ctx, usageBrandText(court), x0 + firstCol + i * colW + 12, y0 + r1 + 48 * c.scale, colW - 16, c.cellSize, 16))
+
+  let gy = y0 + r1 + r2
   for (let g = 0; g < s.groups; g += 1) {
-    ctx.font = `700 ${Math.round(s.exportCfg.cellSize * 1.05)}px "Noto Sans SC"`
-    ctx.fillText(`第${g + 1}组`, x0 + 16, gy + 66 * s.exportCfg.scale)
-    s.courts.forEach((c, i) => {
-      const p1 = playerOf(s.assignment[slotKey(c.id, g, 0)])
-      const p2 = playerOf(s.assignment[slotKey(c.id, g, 1)])
-      fitText(ctx, playerText(p1), x0 + firstCol + i * colW + 10, gy + 44 * s.exportCfg.scale, colW - 20, s.exportCfg.cellSize, 18)
-      fitText(ctx, playerText(p2), x0 + firstCol + i * colW + 10, gy + 90 * s.exportCfg.scale, colW - 20, s.exportCfg.cellSize, 18)
-      ctx.beginPath()
-      ctx.moveTo(x0 + firstCol + i * colW, gy + rowG / 2)
-      ctx.lineTo(x0 + firstCol + (i + 1) * colW, gy + rowG / 2)
-      ctx.stroke()
+    ctx.fillText(`第${g + 1}组`, x0 + 16, gy + 64 * c.scale)
+    s.courts.forEach((court, i) => {
+      const p1 = playerOf(s.assignment[slotKey(court.id, g, 0)])
+      const p2 = playerOf(s.assignment[slotKey(court.id, g, 1)])
+      fitText(ctx, playerText(p1), x0 + firstCol + i * colW + 12, gy + 44 * c.scale, colW - 20, c.cellSize, 14)
+      fitText(ctx, playerText(p2), x0 + firstCol + i * colW + 12, gy + 92 * c.scale, colW - 20, c.cellSize, 14)
+      ctx.beginPath(); ctx.moveTo(x0 + firstCol + i * colW, gy + rg / 2); ctx.lineTo(x0 + firstCol + (i + 1) * colW, gy + rg / 2); ctx.stroke()
     })
-    gy += rowG
+    gy += rg
   }
+
+  const noteY = y0 + r1 + r2 + s.groups * rg
+  ctx.fillStyle = '#c1121f'
+  ctx.font = `700 ${Math.round(c.cellSize * 0.92)}px "Noto Sans SC"`
+  const notes = [
+    '免责声明：自愿参加具有一定风险的文体活动，因其他参加者的非故意行为受到损害的，受害人不得要求其他参加者承担相应责任。',
+    '1.最后半小时可以串场、分组人员可以按实力调整',
+    '2.禁止霸场，私自开单',
+    '3.低强度局禁止带职业选手',
+    '4.第一局输的下，接下来开始每组打两局，换对手依次轮转',
+  ]
+  notes.forEach((line, i) => fitText(ctx, line, x0 + 14, noteY + 40 * c.scale + i * 36 * c.scale, tableW - 24, c.cellSize * 0.9, 12))
 }
 
-async function exportFeeImage() {
-  const c = document.createElement('canvas')
-  c.width = 1400
-  c.height = 900
-  const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#fff'
-  ctx.fillRect(0, 0, c.width, c.height)
-  ctx.fillStyle = '#111'
-  ctx.font = '700 54px "Noto Sans SC"'
-  ctx.fillText('费用表', 620, 80)
-  ctx.font = '500 34px "Noto Sans SC"'
-  ctx.fillText(`日期：${s.date}  时间：${s.time}  地点：${s.place}`, 80, 130)
-
-  const x0 = 80
-  const y0 = 180
-  const rowH = 70
-  const colW = [180, 320, 250, 250, 250]
-  const headers = ['场地', '用球明细', '场地费', '球费', '人均(进一分)']
-  let x = x0
-  headers.forEach((h, i) => { drawCell(ctx, x, y0, colW[i], rowH, h, true); x += colW[i] })
-  s.courts.forEach((court, idx) => {
-    const yy = y0 + (idx + 1) * rowH
-    const ball = ballFee(court)
-    const players = playersInCourt(court.id).length || 1
-    const per = ceil2((court.courtFee + ball) / players)
-    const data = [
-      `${court.label}号场`,
-      usageText(court),
-      court.courtFee.toFixed(2),
-      ball.toFixed(2),
-      per.toFixed(2),
-    ]
-    x = x0
-    data.forEach((v, i) => { drawCell(ctx, x, yy, colW[i], rowH, v, false); x += colW[i] })
-  })
-  const a = document.createElement('a')
-  a.href = c.toDataURL('image/png')
-  a.download = `fee-${Date.now()}.png`
-  a.click()
+function usageBrandText(court: Court) {
+  const names = court.usage.map((u) => brandName(u.brandId))
+  return `${court.label}号（${Array.from(new Set(names)).join('、') || '黄超'}）`
 }
-
-function drawCell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, text: string, bold: boolean) {
-  ctx.strokeStyle = '#222'; ctx.strokeRect(x, y, w, h)
-  ctx.font = `${bold ? 700 : 500} 30px "Noto Sans SC"`; ctx.fillStyle = '#111'
-  fitText(ctx, text, x + 10, y + 44, w - 20, 30, 16)
-}
-function usageText(c: Court) { return c.usage.map((u) => `${brandName(u.brandId)}x${u.count}`).join('、') || '黄超x0' }
 function brandName(id: string) { return s.brands.find((b) => b.id === id)?.name || '未知' }
-function ballFee(court: Court) { return court.usage.reduce((sum, u) => sum + ((s.brands.find((b) => b.id === u.brandId)?.tubePrice || 0) / 12) * u.count, 0) }
-function playersInCourt(courtId: string) { return Object.keys(s.assignment).filter((k) => k.startsWith(`${courtId}|`) && s.assignment[k]).map((k) => s.assignment[k]!) }
 function playerOf(id?: string | null) { return s.players.find((p) => p.id === id) }
 function playerText(p?: Player) { return p ? `${p.name}${p.female ? '🌷' : ''}${p.level ? ` ${p.level}` : ''}` : '-' }
-function ceil2(v: number) { return Math.ceil(v * 100) / 100 }
 function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, start: number, min: number) {
   let size = start
   while (size >= min) { ctx.font = `${ctx.font.includes('700') ? 700 : 500} ${size}px "Noto Sans SC"`; if (ctx.measureText(text).width <= maxW) break; size -= 1 }
   ctx.fillText(text, x, y)
 }
 
+function shareCurrent() {
+  const payload = {
+    date: s.date, time: s.time, place: s.place, players: s.players, brands: s.brands, groups: s.groups, courts: s.courts, assignment: s.assignment,
+  }
+  const data = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+  const url = `${location.origin}${location.pathname}#share=${data}`
+  navigator.clipboard.writeText(url).then(() => alert('分享链接已复制')).catch(() => prompt('复制链接', url))
+}
+function restoreFromShare() {
+  const m = location.hash.match(/share=([^&]+)/)
+  if (!m) return
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(m[1]))))
+    s = { ...s, ...data }
+    save()
+  } catch {}
+}
+
+function downloadCanvas(c: HTMLCanvasElement, name: string) { const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = name; a.click() }
 function byId<T extends HTMLElement = HTMLElement>(id: string) { return document.getElementById(id)! as T }
 function esc(v: string) { return v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;') }
 function save() { localStorage.setItem(KEY, JSON.stringify(s)) }
