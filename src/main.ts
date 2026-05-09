@@ -425,21 +425,64 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: numb
 }
 
 function shareCurrent() {
-  const payload = {
-    date: s.date, time: s.time, place: s.place, players: s.players, brands: s.brands, groups: s.groups, courts: s.courts, assignment: s.assignment,
-  }
-  const data = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
-  const url = `${location.origin}${location.pathname}#share=${data}`
+  const payload = packShareState()
+  const data = toBase64Url(JSON.stringify(payload))
+  const url = `${location.origin}${location.pathname}?s=${data}`
   navigator.clipboard.writeText(url).then(() => alert('分享链接已复制')).catch(() => prompt('复制链接', url))
 }
 function restoreFromShare() {
-  const m = location.hash.match(/share=([^&]+)/)
+  const m = new URLSearchParams(location.search).get('s')
   if (!m) return
   try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(m[1]))))
-    s = { ...s, ...data }
+    const data = JSON.parse(fromBase64Url(m))
+    applyPackedState(data)
     save()
   } catch {}
+}
+
+function packShareState() {
+  return {
+    d: s.date,
+    t: s.time,
+    p: s.place,
+    g: s.groups,
+    ps: s.players.map((x) => [x.id, x.name, x.female ? 1 : 0, x.level, x.unresolved ? 1 : 0]),
+    bs: s.brands.map((x) => [x.id, x.name, x.tubePrice]),
+    cs: s.courts.map((x) => [x.id, x.label, x.usage.map((u) => [u.id, u.brandId, u.count])]),
+    as: Object.entries(s.assignment).filter(([, v]) => Boolean(v)),
+  }
+}
+
+function applyPackedState(data: unknown) {
+  const v = data as {
+    d?: string
+    t?: string
+    p?: string
+    g?: number
+    ps?: Array<[string, string, number, string, number]>
+    bs?: Array<[string, string, number]>
+    cs?: Array<[string, string, Array<[string, string, number]>]>
+    as?: Array<[string, string]>
+  }
+  s.date = v.d ?? s.date
+  s.time = v.t ?? s.time
+  s.place = v.p ?? s.place
+  s.groups = Math.max(1, Number(v.g ?? s.groups))
+  s.players = (v.ps ?? []).map((x) => ({ id: x[0], name: x[1], female: Boolean(x[2]), level: x[3], unresolved: Boolean(x[4]) }))
+  s.brands = (v.bs ?? []).map((x) => ({ id: x[0], name: x[1], tubePrice: Number(x[2] ?? 0) }))
+  s.courts = (v.cs ?? []).map((x) => ({ id: x[0], label: x[1], usage: (x[2] ?? []).map((u) => ({ id: u[0], brandId: u[1], count: Number(u[2] ?? 0) })) }))
+  s.assignment = {}
+  ;(v.as ?? []).forEach(([k, pid]) => { s.assignment[k] = pid })
+}
+
+function toBase64Url(text: string) {
+  const b64 = btoa(unescape(encodeURIComponent(text)))
+  return b64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+}
+function fromBase64Url(text: string) {
+  const b64 = text.replaceAll('-', '+').replaceAll('_', '/')
+  const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
+  return decodeURIComponent(escape(atob(b64 + pad)))
 }
 
 function downloadCanvas(c: HTMLCanvasElement, name: string) { const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = name; a.click() }
