@@ -352,16 +352,16 @@ async function drawSchedule(ctx: CanvasRenderingContext2D, w: number, h: number)
   else { ctx.fillStyle = '#f4efe6'; ctx.fillRect(0, 0, w, h) }
 
   const c = s.exportCfg
-  const tableW = (Math.min(1600, 240 + s.courts.length * 360)) * c.scale
-  const tableH = (310 + s.groups * 110 + 220) * c.scale
+  const tableW = (Math.min(1600, 260 + s.courts.length * 340)) * c.scale
+  const topH = 86 * c.scale
+  const midH = (130 + s.groups * 110) * c.scale
+  const bottomH = 210 * c.scale
+  const tableH = topH + midH + bottomH
   const x0 = (w - tableW) / 2 + c.x
   const y0 = (h - tableH) / 2 + c.y
   const firstCol = 150 * c.scale
   const colW = (tableW - firstCol) / Math.max(1, s.courts.length)
-  const r1 = 78 * c.scale
-  const r2 = 78 * c.scale
   const rg = 110 * c.scale
-  const rLast = 220 * c.scale
 
   ctx.fillStyle = '#fff'
   ctx.fillRect(x0, y0, tableW, tableH)
@@ -369,23 +369,32 @@ async function drawSchedule(ctx: CanvasRenderingContext2D, w: number, h: number)
   ctx.lineWidth = 2
   ctx.strokeRect(x0, y0, tableW, tableH)
 
-  const yLines = [y0 + r1, y0 + r1 + r2, ...Array.from({ length: s.groups }, (_, i) => y0 + r1 + r2 + (i + 1) * rg), y0 + r1 + r2 + s.groups * rg + rLast]
-  yLines.forEach((yy) => { ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + tableW, yy); ctx.stroke() })
+  const topY = y0
+  const midY = y0 + topH
+  const bottomY = midY + midH
+  ctx.beginPath(); ctx.moveTo(x0, midY); ctx.lineTo(x0 + tableW, midY); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(x0, bottomY); ctx.lineTo(x0 + tableW, bottomY); ctx.stroke()
 
-  ctx.beginPath(); ctx.moveTo(x0 + firstCol, y0); ctx.lineTo(x0 + firstCol, y0 + tableH); ctx.stroke()
-  for (let i = 1; i < s.courts.length; i += 1) { const xx = x0 + firstCol + i * colW; ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + r1 + r2 + s.groups * rg); ctx.stroke() }
+  drawTopSixCols(ctx, x0, topY, tableW, topH, c)
+
+  const midHeaderH = 64 * c.scale
+  ctx.beginPath(); ctx.moveTo(x0, midY + midHeaderH); ctx.lineTo(x0 + tableW, midY + midHeaderH); ctx.stroke()
+  for (let i = 1; i <= s.groups; i += 1) {
+    const yy = midY + midHeaderH + i * rg
+    ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + tableW, yy); ctx.stroke()
+  }
+  ctx.beginPath(); ctx.moveTo(x0 + firstCol, midY); ctx.lineTo(x0 + firstCol, bottomY); ctx.stroke()
+  for (let i = 1; i < s.courts.length; i += 1) {
+    const xx = x0 + firstCol + i * colW
+    ctx.beginPath(); ctx.moveTo(xx, midY); ctx.lineTo(xx, bottomY); ctx.stroke()
+  }
 
   ctx.fillStyle = '#111'
-  ctx.font = `700 ${Math.round(c.cellSize * 1.1)}px "Noto Sans SC"`
-  ctx.fillText('日期', x0 + 24, y0 + 48 * c.scale)
-  ctx.fillText(`时间：${s.time}`, x0 + firstCol + colW * Math.max(0, s.courts.length - 1) - 20, y0 + 48 * c.scale)
-  ctx.fillText(`地点：${s.place}`, x0 + firstCol + colW * 0.8, y0 + 48 * c.scale)
-  fitText(ctx, s.date, x0 + firstCol + 14, y0 + 48 * c.scale, colW - 18, c.cellSize, 16)
+  ctx.font = `700 ${Math.round(c.cellSize * 1.05)}px "Noto Sans SC"`
+  ctx.fillText('场地', x0 + 20, midY + 42 * c.scale)
+  s.courts.forEach((court, i) => fitText(ctx, usageBrandText(court), x0 + firstCol + i * colW + 10, midY + 42 * c.scale, colW - 18, c.cellSize, 16))
 
-  ctx.fillText('场地', x0 + 24, y0 + r1 + 48 * c.scale)
-  s.courts.forEach((court, i) => fitText(ctx, usageBrandText(court), x0 + firstCol + i * colW + 12, y0 + r1 + 48 * c.scale, colW - 16, c.cellSize, 16))
-
-  let gy = y0 + r1 + r2
+  let gy = midY + midHeaderH
   for (let g = 0; g < s.groups; g += 1) {
     ctx.fillText(`第${g + 1}组`, x0 + 16, gy + 64 * c.scale)
     s.courts.forEach((court, i) => {
@@ -398,7 +407,7 @@ async function drawSchedule(ctx: CanvasRenderingContext2D, w: number, h: number)
     gy += rg
   }
 
-  const noteY = y0 + r1 + r2 + s.groups * rg
+  const noteY = bottomY
   ctx.fillStyle = '#c1121f'
   ctx.font = `700 ${Math.round(c.cellSize * 0.92)}px "Noto Sans SC"`
   const notes = [
@@ -408,7 +417,30 @@ async function drawSchedule(ctx: CanvasRenderingContext2D, w: number, h: number)
     '3.低强度局禁止带职业选手',
     '4.第一局输的下，接下来开始每组打两局，换对手依次轮转',
   ]
-  notes.forEach((line, i) => fitText(ctx, line, x0 + 14, noteY + 40 * c.scale + i * 36 * c.scale, tableW - 24, c.cellSize * 0.9, 12))
+  notes.forEach((line, i) => fitText(ctx, line, x0 + 14, noteY + 36 * c.scale + i * 34 * c.scale, tableW - 24, c.cellSize * 0.88, 12))
+}
+
+function drawTopSixCols(
+  ctx: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  c: ExportCfg
+) {
+  const col = w / 6
+  for (let i = 1; i < 6; i += 1) {
+    const xx = x0 + i * col
+    ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + h); ctx.stroke()
+  }
+  ctx.fillStyle = '#111'
+  ctx.font = `700 ${Math.round(c.cellSize)}px "Noto Sans SC"`
+  fitText(ctx, '日期', x0 + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
+  fitText(ctx, s.date || '-', x0 + col + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
+  fitText(ctx, '时间', x0 + col * 2 + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
+  fitText(ctx, s.time || '-', x0 + col * 3 + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
+  fitText(ctx, '地点', x0 + col * 4 + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
+  fitText(ctx, s.place || '-', x0 + col * 5 + 10, y0 + h * 0.62, col - 20, c.cellSize, 14)
 }
 
 function usageBrandText(court: Court) {
