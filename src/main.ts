@@ -100,9 +100,13 @@ function parseRelay(text: string): { meta: typeof meta; players: Player[] } {
     .map((line, i) => {
       const raw = line.replace(/^\d+\s*[\.、]\s*/, '').trim()
       const isFemale = /🌷|💐|🌸/.test(raw)
-      const levelMatch = raw.match(/(中羽|台羽)\s*[\d\.]+级?|\d+(\.\d+)?级/)
+      const levelMatch = raw.match(/(中羽|台羽)\s*[\d.]+级?|\d+(\.\d+)?级/)
       const levelText = levelMatch ? levelMatch[0] : ''
-      const name = raw.replace(/（.*?）|\(.*?\)/g, '').replace(/🌷|💐|🌸/g, '').replace(/(中羽|台羽)\s*[\d\.]+级?|\d+(\.\d+)?级/g, '').trim()
+      const name = raw
+        .replace(/（.*?）|\(.*?\)/g, '')
+        .replace(/🌷|💐|🌸/g, '')
+        .replace(/(中羽|台羽)\s*[\d.]+级?|\d+(\.\d+)?级/g, '')
+        .trim()
       return {
         id: `p-${i}`,
         raw,
@@ -179,6 +183,7 @@ function bindDnD() {
       el.classList.add('active')
     })
   })
+
   document.querySelectorAll<HTMLElement>('.dropzone').forEach((z) => {
     z.addEventListener('dragover', (e) => e.preventDefault())
     z.addEventListener('drop', (e) => {

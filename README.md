@@ -1,6 +1,8 @@
 # Chiikawa Badminton Board
 
-一个移动端优先的羽毛球接龙解析与场地分配工具，适配部署到 `wangxinfeng.com/badminton`。
+一个双页面站点：
+- `/`：炫酷移动端博客首页
+- `/badminton/`：移动端优先的羽毛球接龙解析与场地分配工具
 
 ## 功能
 
@@ -23,13 +25,13 @@ npm run dev
 npm run build
 ```
 
-构建产物位于 `dist/`，已配置 Vite `base=/badminton/`，可直接挂载到网站子路径。
+构建产物位于 `dist/`，默认 `base=/`。
 
 ## 部署到 `wangxinfeng.com/badminton`
 
-1. 将 `dist/` 全部内容上传到站点的 `/badminton/` 目录。
-2. 确保服务器静态路由允许访问 `/badminton/assets/*`。
-3. 访问 `https://wangxinfeng.com/badminton/` 验证页面。
+1. 将 `dist/` 全部内容上传到网站根目录。
+2. 访问 `https://wangxinfeng.com/` 验证博客首页。
+3. 点击顶部 `🏸 羽毛球图表` 进入 `https://wangxinfeng.com/badminton/`。
 
 ## 预留 API
 
