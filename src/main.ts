@@ -14,9 +14,10 @@ type State = {
   totalCourtFee: string
   perCourtFee: string
   bgDataUrl: string
+  templateDataUrl: string
 }
 
-const KEY = 'fengzi_badminton_state_v2'
+const KEY = 'fengzi_badminton_state_v3'
 let gateClicks: number[] = []
 const initial: State = {
   raw: '',
@@ -29,6 +30,7 @@ const initial: State = {
   totalCourtFee: '',
   perCourtFee: '',
   bgDataUrl: '',
+  templateDataUrl: '',
 }
 let s: State = load()
 
@@ -36,7 +38,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
 <main class="page" id="page">
   <header class="top">
-    <button id="gateIcon" class="gate" title="click 3 times for blog">🏸</button>
+    <button id="gateIcon" class="gate" title="连续点击三下进入博客">🏸</button>
     <h1>风子的羽毛球场地分配工具</h1>
     <button id="clearCache">清空缓存</button>
   </header>
@@ -45,6 +47,7 @@ app.innerHTML = `
     <div class="row">
       <button id="parse">解析接龙</button>
       <label class="file">背景图<input id="bgUpload" type="file" accept="image/*"></label>
+      <label class="file">排表模板图<input id="templateUpload" type="file" accept="image/*"></label>
       <button id="download">下载带价格表格图</button>
     </div>
   </section>
@@ -84,10 +87,7 @@ byId('clearCache').addEventListener('click', () => {
   s = structuredClone(initial)
   render()
 })
-byId('parse').addEventListener('click', () => {
-  parseRelay(rawEl.value)
-  render()
-})
+byId('parse').addEventListener('click', () => { parseRelay(rawEl.value); render() })
 byId('download').addEventListener('click', () => exportImage())
 byId<HTMLInputElement>('bgUpload').addEventListener('change', async (e) => {
   const f = (e.target as HTMLInputElement).files?.[0]
@@ -95,6 +95,12 @@ byId<HTMLInputElement>('bgUpload').addEventListener('change', async (e) => {
   s.bgDataUrl = await fileToDataUrl(f)
   save()
   render()
+})
+byId<HTMLInputElement>('templateUpload').addEventListener('change', async (e) => {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (!f) return
+  s.templateDataUrl = await fileToDataUrl(f)
+  save()
 })
 byId('addBrand').addEventListener('click', () => {
   s.brands.push({ name: '', tubePrice: 100 })
@@ -105,8 +111,8 @@ byId('addBrand').addEventListener('click', () => {
 dateEl.addEventListener('input', () => { s.date = dateEl.value; save() })
 timeEl.addEventListener('input', () => { s.time = timeEl.value; save() })
 placeEl.addEventListener('input', () => { s.place = placeEl.value; save() })
-byId<HTMLInputElement>('totalCourtFee').addEventListener('input', (e) => { s.totalCourtFee = (e.target as HTMLInputElement).value; save() })
-byId<HTMLInputElement>('perCourtFee').addEventListener('input', (e) => { s.perCourtFee = (e.target as HTMLInputElement).value; save() })
+byId<HTMLInputElement>('totalCourtFee').addEventListener('input', (e) => { s.totalCourtFee = (e.target as HTMLInputElement).value; save(); renderTable() })
+byId<HTMLInputElement>('perCourtFee').addEventListener('input', (e) => { s.perCourtFee = (e.target as HTMLInputElement).value; save(); renderTable() })
 
 render()
 
@@ -121,15 +127,13 @@ function parseRelay(text: string) {
     s.time = m?.[2] ?? ''
   }
   if (p) s.place = p
-  s.players = lines
-    .filter((x) => /^\d+\s*[\.、]/.test(x))
-    .map((line, i) => {
-      const raw = line.replace(/^\d+\s*[\.、]\s*/, '')
-      const female = /🌷|💐|🌸/.test(raw)
-      const cleaned = raw.replace(/🌷|💐|🌸/g, '').replace(/(中羽|台羽)\s*[\d.]+级?/g, '').trim()
-      const unresolved = cleaned.length === 0
-      return { id: `p${i}`, name: unresolved ? '未解析' : cleaned, female, unresolved }
-    })
+  s.players = lines.filter((x) => /^\d+\s*[\.、]/.test(x)).map((line, i) => {
+    const raw = line.replace(/^\d+\s*[\.、]\s*/, '')
+    const female = /🌷|💐|🌸/.test(raw)
+    const cleaned = raw.replace(/🌷|💐|🌸/g, '').replace(/(中羽|台羽)\s*[\d.]+级?/g, '').trim()
+    const unresolved = cleaned.length === 0
+    return { id: `p${i}`, name: unresolved ? '未解析' : cleaned, female, unresolved }
+  })
   s.courts = s.courts.map((c) => ({ ...c, slots: Array(8).fill(null) }))
   save()
 }
@@ -261,12 +265,14 @@ function slotHtml(c: Court, idx: number) {
   s.players.forEach((p) => opts.push(`<option value="${p.id}" ${c.slots[idx] === p.id ? 'selected' : ''}>${esc(p.name)}${p.female ? '🌷' : ''}</option>`))
   return `<select data-slot="${c.id}:${idx}">${opts.join('')}</select>`
 }
+
 function usageHtml(c: Court) {
   const opts = ['<option value="">添加品牌</option>']
   s.brands.forEach((b) => opts.push(`<option value="${esc(b.name)}">${esc(b.name)}</option>`))
   const rows = c.shuttleUsage.map((u, i) => `<div class="useRow"><span>${esc(u.brand)}</span><input data-use-count="${c.id}:${i}" value="${u.count}" type="number"><button data-use-del="${c.id}:${i}">x</button></div>`).join('')
   return `${rows}<select data-use-brand="${c.id}">${opts.join('')}</select>`
 }
+
 function feePerCourt(c: Court) {
   const courtFee = s.totalCourtFee ? Number(s.totalCourtFee || 0) / s.courts.length : Number(s.perCourtFee || 0)
   const ballFee = c.shuttleUsage.reduce((sum, u) => {
@@ -278,41 +284,64 @@ function feePerCourt(c: Court) {
 }
 
 async function exportImage() {
+  const width = 1600
+  const height = 1000
   const canvas = document.createElement('canvas')
-  canvas.width = 1600
-  canvas.height = 1000
+  canvas.width = width
+  canvas.height = height
   const ctx = canvas.getContext('2d')!
-  if (s.bgDataUrl) {
-    const img = await loadImage(s.bgDataUrl)
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+  if (s.templateDataUrl) {
+    const template = await loadImage(s.templateDataUrl)
+    ctx.drawImage(template, 0, 0, width, height)
+  } else if (s.bgDataUrl) {
+    const bg = await loadImage(s.bgDataUrl)
+    ctx.drawImage(bg, 0, 0, width, height)
   } else {
     ctx.fillStyle = '#f8f2ea'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, width, height)
   }
+
   ctx.fillStyle = '#4a2a20'
-  ctx.font = '700 50px "Noto Sans SC"'
-  ctx.fillText('风子的羽毛球场地分配工具', 430, 80)
-  ctx.font = '500 30px "Noto Sans SC"'
-  ctx.fillText(`日期 ${s.date} 时间 ${s.time} 地点 ${s.place}`, 110, 140)
-  let y = 220
-  s.courts.forEach((c) => {
-    ctx.font = '700 38px "Noto Sans SC"'
-    ctx.fillText(`${c.label}号场`, 100, y)
-    c.slots.forEach((pid, i) => {
+  ctx.font = '700 52px "Noto Sans SC"'
+  ctx.fillText('场地分配表', 640, 82)
+  ctx.font = '600 31px "Noto Sans SC"'
+  ctx.fillText(`日期：${s.date}`, 100, 164)
+  ctx.fillText(`时间：${s.time}`, 1100, 164)
+  ctx.fillText(`场地：${s.place}`, 760, 164)
+  ctx.fillText(`人数：${s.players.filter((p) => p.name !== '未解析').length}`, 100, 206)
+
+  const courtXs = [340, 820, 1290]
+  const groupYs = [300, 396, 492, 588, 684, 780, 876, 972]
+  s.courts.forEach((court, ci) => {
+    fitText(ctx, `${court.label}号场`, courtXs[ci] - 90, 254, 180, 42, 24, '700')
+    court.slots.forEach((pid, ri) => {
       const p = s.players.find((x) => x.id === pid)
-      fitText(ctx, `${i + 1}. ${p ? `${p.name}${p.female ? '🌷' : ''}` : '-'}`, 330 + Math.floor(i / 4) * 560, y - 5 + (i % 4) * 45, 520)
+      const text = p ? `${p.name}${p.female ? '🌷' : ''}` : '-'
+      fitText(ctx, text, courtXs[ci], groupYs[ri], 300, 38, 20, '500')
     })
-    y += 220
+    fitText(ctx, `人均：${feePerCourt(court).toFixed(2)}`, courtXs[ci], 935, 300, 34, 20, '700')
   })
+
   const a = document.createElement('a')
   a.href = canvas.toDataURL('image/png')
-  a.download = `schedule-${Date.now()}.png`
+  a.download = `schedule-template-${Date.now()}.png`
   a.click()
 }
-function fitText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number) {
-  let size = 28
-  while (size > 14) {
-    ctx.font = `500 ${size}px "Noto Sans SC"`
+
+function fitText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  startSize: number,
+  minSize: number,
+  weight: '500' | '600' | '700'
+) {
+  let size = startSize
+  while (size >= minSize) {
+    ctx.font = `${weight} ${size}px "Noto Sans SC"`
     if (ctx.measureText(text).width <= maxWidth) break
     size -= 1
   }
