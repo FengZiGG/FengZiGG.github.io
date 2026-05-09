@@ -5,14 +5,14 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
 <main class="blog-page">
   <header class="topbar">
-    <div class="brand">Wang Xinfeng Blog</div>
-    <a class="badminton-link" href="/badminton/" aria-label="进入羽毛球图表页面">🏸 羽毛球图表</a>
+    <div class="brand">fengzi</div>
+    <a class="badminton-link" href="/" aria-label="返回羽毛球页面">返回排表</a>
   </header>
 
   <section class="hero">
     <p class="badge">FAST · MOBILE · COOL</p>
-    <h1>写代码、打羽毛球、记录生活</h1>
-    <p class="sub">一个追求速度与质感的个人博客。内容覆盖开发实践、效率工具、以及每周羽毛球活动记录。</p>
+    <h1>冷淡，克制，持续输出</h1>
+    <p class="sub">fengzi 的个人博客：开发笔记、训练记录、工具清单。</p>
   </section>
 
   <section class="cards">
